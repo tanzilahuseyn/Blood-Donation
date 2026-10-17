@@ -3,6 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AnimalList } from './pages/AnimalList';
 import { AnimalCreate } from './pages/AnimalCreate';
 import { AnimalDetail } from './pages/AnimalDetail';
+import { CentreList } from './pages/CentreList';
+import { CentreCreate } from './pages/CentreCreate';
+import { CentreDetail } from './pages/CentreDetail';
+import { ReadinessQuestionnaire } from './pages/readiness/ReadinessQuestionnaire';
 
 /**
  * Components that may be ABSENT from this checkout register their routes by
@@ -21,6 +25,10 @@ export const App = () => (
     <Route path="/animals" element={<AnimalList />} />
     <Route path="/animals/new" element={<AnimalCreate />} />
     <Route path="/animals/:id" element={<AnimalDetail />} />
+    <Route path="/centres" element={<CentreList />} />
+    <Route path="/centres/new" element={<CentreCreate />} />
+    <Route path="/centres/:id" element={<CentreDetail />} />
+    <Route path="/readiness" element={<ReadinessQuestionnaire />} />
     {componentRoutes}
   </Routes>
 );
