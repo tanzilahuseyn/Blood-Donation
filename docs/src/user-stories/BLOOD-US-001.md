@@ -1,6 +1,6 @@
 # BLOOD-US-001 · Find a donation centre and check readiness before going
 
-> **BLOOD-US-001** · state **Proposed** · traces to [BLOOD.01](../specifications/BLOOD.01-donation-readiness.md)
+> **BLOOD-US-001** · state **Confirmed** · traces to [BLOOD.01](../specifications/BLOOD.01-donation-readiness.md)
 
 **As** a person thinking about giving blood
 **I want** to find a donation centre and check, before I leave home, whether I

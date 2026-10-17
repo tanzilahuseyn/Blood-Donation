@@ -1,6 +1,6 @@
 # BLOOD.01 · Blood donation information and readiness
 
-> **BLOOD.01** · state **Proposed** · traces from [BLOOD-US-001](../user-stories/BLOOD-US-001.md)
+> **BLOOD.01** · state **Confirmed** · traces from [BLOOD-US-001](../user-stories/BLOOD-US-001.md)
 > · source `backend/src/main/java/ee/taltech/ite4120/blood/`, `backend/src/main/resources/blood/db/changelog/`, `frontend/src/pages/`
 
 ## Description
