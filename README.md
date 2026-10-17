@@ -1,86 +1,121 @@
-# ITE4120 — Animals Register · Course Template
+# Blood Donation
 
-A working e-government-shaped application, built the way the Estonian public
-sector builds them — and the template your group extends with **your own
-component**. The worked example is the **animals register**: three tables under
-Liquibase, a documented REST API, an owner lookup through a registry adapter
-(mock locally, X-Road-shaped for production), and a React UI on the Helex
-component library.
+Find a blood donation centre, and check **before you leave home** whether you
+are prepared and likely to be accepted, so you don't make a trip only to be
+turned away for something you could have known in advance.
 
-Everything Helex arrives as **published packages** — there is no platform source
-checkout here and none is needed.
+An ITE4120 course project, built on the course's e-government-shaped template
+([igorboss/ite4120](https://github.com/igorboss/ite4120)): Spring Boot,
+PostgreSQL with Liquibase, React with the Helex component library, and a
+registry lookup that is imitated locally and X-Road-shaped for production.
 
-| Layer | Where | Session |
-| --- | --- | --- |
-| Specification | `docs/src/` (mdBook) | S1 |
-| Data — PostgreSQL + Liquibase | `backend/src/main/resources/animals/db/` | S2 |
-| API — Spring Boot + springdoc | `backend/src/main/java/.../animals/` | S3 |
-| Registry adapter (mock + X-Road) | `.../animals/ownerregistry/` | S3 |
-| UI — React + @helex/ui | `frontend/src/` | S4 |
+## What it does
 
-The UI wears the **TalTech theme** — the `taltech` pack from
-`helex-solutions/helex-extensions`, registered in `frontend/src/theme/taltech.ts`
-and selected by `VITE_THEME` in `frontend/.env` (the @helex/ui built-ins
-`helex`, `tedi`, `matrix` work there too).
+**Donation centre directory** (`/centres`)
+- Lists donation centres with name, region, address, opening hours and phone.
+  Search by name or address; filter by region (the 15 Estonian counties).
+- Add, edit and retire centres. A centre code identifies exactly one active
+  centre; a retired centre's code can be reused (soft delete).
+- Each centre's operating organisation is stored only as its business registry
+  code. Its legal name and address are fetched live from the business register,
+  imitated locally at `/mock-registry/companies/{code}`. If the register is
+  down, only that detail is left out; the directory keeps working.
+
+**Readiness questionnaire** (`/readiness`)
+- Short yes/no questions about preparation (eaten, drunk, rested…) and
+  eligibility today (recent illness, a recent tattoo or piercing…).
+- Ends with one of three outcomes: **Ready**, **Prepare first** or
+  **Not today**, with advice for every answer that raised a concern.
+- **Private by design:** the answers are evaluated in your browser and are
+  never sent to the server, stored or logged. There is no answers table and no
+  endpoint that accepts answers.
+
+The questionnaire is guidance only. The staff at the donation centre always
+make the final decision.
+
+## Specification
+
+Spec first, tests second, implementation third (see `AGENTS.md`):
+
+- User story: [`docs/src/user-stories/BLOOD-US-001.md`](docs/src/user-stories/BLOOD-US-001.md)
+- Specification: [`docs/src/specifications/BLOOD.01-donation-readiness.md`](docs/src/specifications/BLOOD.01-donation-readiness.md)
+  covers the data model, API, UI and business tests.
+
+## Where the code is
+
+| Layer | Where |
+| --- | --- |
+| Database: PostgreSQL + Liquibase, schema `blood` | `backend/src/main/resources/blood/db/changelog/` |
+| API: Spring Boot + springdoc | `backend/src/main/java/ee/taltech/ite4120/blood/` |
+| Business register adapter (mock, HTTP, X-Road skeleton) | `.../blood/operatorregistry/` |
+| UI: React + @helex/ui | `frontend/src/pages/Centre*.tsx`, `frontend/src/pages/readiness/` |
+| Readiness rule (pure function) | `frontend/src/pages/readiness/evaluate.ts` |
+
+The template's worked example, the **animals register**, is still included
+(`/animals`, package `ee.taltech.ite4120.animals`) as the pattern this
+component follows.
 
 ## Run it
 
-First time on this machine? Install the toolchain and the GitHub Packages
-token first — [§ Tools](#tools), at the end of this file. Then:
+First time on this machine? Install the tools and set up the GitHub token
+first ([Tools](#tools), below). Then:
 
 ```bash
-# 1. database + backend  (first run downloads dependencies — takes a few minutes)
+# 1. database + backend (the first run downloads dependencies, which takes a few minutes)
 ./scripts/run-backend.sh          # Windows: .\scripts\run-backend.ps1
 
-# 2. frontend, in a second terminal  (npm needs the token too — § Tools › GitHub token)
-cd frontend && npm install && cd ..
+# 2. frontend, in a second terminal
+cd frontend && npm ci && cd ..
 ./scripts/run-frontend.sh         # Windows: .\scripts\run-frontend.ps1
 ```
 
 | What | Where |
 | --- | --- |
-| The application | http://localhost:18640 |
-| Swagger UI — the live API contract | http://localhost:18440/swagger-ui.html |
-| The imitated population registry | http://localhost:18440/mock-registry/persons/38102130265 |
-| PostgreSQL | localhost:18520 · `scripts/psql` for a shell |
-| The documentation book | `scripts/run-docs` → http://localhost:18740 (needs [mdBook](https://rust-lang.github.io/mdBook/guide/installation.html), no Docker) |
+| Donation centres | http://localhost:18640/centres |
+| Readiness questionnaire | http://localhost:18640/readiness |
+| Swagger UI, the live API contract | http://localhost:18440/swagger-ui.html |
+| Imitated business register | http://localhost:18440/mock-registry/companies/90000001 |
+| PostgreSQL | localhost:18520 (`scripts/psql` for a shell) |
+| Documentation book | `scripts/run-docs` → http://localhost:18740 (needs mdBook) |
 
-Signed in automatically as a mock user; the API accepts
-`Authorization: Bearer <any-username>` in local mode. The database is
-disposable: `scripts/reset-db` destroys and recreates it, and Liquibase
-rebuilds the schema on the next backend start.
+You are signed in automatically as a mock user. The API accepts
+`Authorization: Bearer <any-username>` in local mode.
 
-## Tests
+**Demo data** (loaded locally under the Liquibase `demo` context): three
+fictional centres in Tallinn, Tartu and Pärnu. Operator codes `90000001` and
+`90000002` are known to the imitated register; `90000099` shows how an
+unknown organisation looks.
+
+The database is disposable: `scripts/reset-db` destroys and recreates it, and
+Liquibase rebuilds the schema on the next backend start.
+
+## Tests and checks
+
+Each line runs from the project folder:
 
 ```bash
-cd backend && ./gradlew test      # business tests, against a throwaway PostgreSQL
+(cd backend && ./gradlew test)      # business tests, against a throwaway PostgreSQL
+(cd frontend && npx vitest run)     # the readiness outcome rule
+(cd frontend && npx tsc -b)         # typecheck
+python3 scripts/check_changesets.py # Liquibase formatted-SQL rules
 ```
 
-The two tests in `AnimalBusinessRulesIT` are the specification's business tests,
-executable — and they also prove the migrations run clean from empty.
+`BloodBusinessRulesIT` holds business tests 1–5 from the specification:
+- centre codes are unique among active centres
+- coordinates are real and given together
+- only active questions are served, in order
+- regions must be known
+- operator codes have 8 digits
 
-The same tests, the frontend typecheck and build, and the changeset gate run on
-every pull request as the **Verify** checks (`.github/workflows/verify.yml`);
-they need nothing from you beyond the repository itself. A copy of this
-repository whose Actions token cannot read the Maven mirror adds a `GPR_TOKEN`
-repository secret (the same classic token as in § Tools).
+`evaluate.test.ts` holds test 6, the outcome rule. The backend tests also
+prove that the migrations run clean from empty.
 
-## Your component
+The same checks run on every pull request as the **Verify** workflow
+(`.github/workflows/verify.yml`).
 
-1. Copy `docs/_templates/` → write your user story and specification (different
-   domain from animals!).
-2. New package `ee.taltech.ite4120.<yours>`, new schema, new changelog folder,
-   one include added to the master changelog.
-3. Follow the animals example file-by-file; the shape is the deliverable.
-4. Rules of the road: `AGENTS.md` (for your agent — and for you). Claude Code,
-   Cursor, Copilot and Gemini are all pointed at that one file; use whichever.
+## License
 
-## Reading order
-
-`docs/src/README-docs.md` → the animals story and spec in `docs/src/` →
-the three manuals in `docs/src/manuals/` (database, REST API, frontend) →
-`docs/src/liquibase-guide.md` → `docs/src/development-workflow.md`. Or serve the
-book with live reload: `scripts/run-docs` (`.sh` / `.ps1`).
+Apache License 2.0, inherited from the course template. See [`LICENSE`](LICENSE).
 
 ## Tools
 
@@ -190,10 +225,10 @@ npm config set //npm.pkg.github.com/:_authToken=ghp_YOUR_TOKEN --global
 
 Missing or wrong token looks like this: Gradle says *cannot resolve
 org.helex.emr:…*, npm says *401*. Fix the credentials first — never vendor
-jars. No other access is needed: the backend's Helex jars resolve from THIS
-repository's own Maven registry (mirrored by the lecturer with
-`scripts/mirror-packages.sh`), and the `@helex-solutions` npm packages are
+jars. No other access is needed: the backend's Helex jars resolve from the
+course repository's Maven registry, `igorboss/ite4120` (mirrored by the
+lecturer with `scripts/mirror-packages.sh`), and the `@helex-solutions` npm packages are
 public — GitHub's npm registry still wants the token to read them, but no
 extra permission. A correct token that still gets 401/403 means the token is
-expired or you have not accepted the invitation to this repository; ask the
+expired or your account has no access to `igorboss/ite4120`; ask the
 lecturer.
