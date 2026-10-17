@@ -11,8 +11,8 @@ questionnaire**: the questions and their advice are content held in the
 database and served by the API; the person's answers are evaluated in the
 browser. The centre's operator is held as a business registry code only; its
 legal name and address are resolved live from the business register through
-the operator-registry adapter (mock in this course, X-Road-shaped in
-production).
+the operator-registry adapter (imitated by the application in this course,
+X-Road-shaped in production — see *The business register* under API).
 
 **Privacy constraint — part of the specification, not an aspiration.** No
 table, endpoint, request, log line or browser storage key holds a
@@ -70,7 +70,7 @@ reference table; demo centres and the placeholder questions arrive under
 | `POST /api/centres` | add a centre; answers **201 + Location** | 400 validation · 409 duplicate centre code |
 | `PUT /api/centres/{id}` | update; centre code immutable | 400 · 404 |
 | `DELETE /api/centres/{id}` | retire (soft) — **204** | 404 |
-| `GET /api/centres/{id}/operator` | operator's legal name and address via the registry adapter | 404 · 502 registry down |
+| `GET /api/centres/{id}/operator` | operator's legal name and address via the registry adapter; **200 with an empty body** when the centre has no operator code or the register does not know it | 404 no such active centre · 502 register down |
 | `GET /api/centres/regions` | the reference list | — |
 | `GET /api/readiness-questions` | the active questions, by `display_order` | — |
 
@@ -84,6 +84,19 @@ questionnaire stay fully usable. Rationale: the operator's legal name is
 supporting information; a person looking for where and when to give blood must
 never be blocked by it. An organisation the register does not know is a miss
 (empty answer), not a failure.
+
+**The business register.** The adapter lives in `blood/operatorregistry/` and
+follows `animals/ownerregistry/` file for file: an `OperatorRegistryAdapter`
+interface, an HTTP adapter, an X-Road skeleton, and one mapper that turns the
+register's wire record into our `OperatorInfo` (`registryCode`, `legalName`,
+`address`). In local mode the register is imitated by the application itself:
+
+| Imitated endpoint | Answers |
+| --- | --- |
+| `GET /mock-registry/companies/{registrikood}` | 200 + wire record `ArCompanyResponse(registrikood, nimi, aadress)` — Estonian field names, not translated · 404 for an unknown code |
+
+It serves three fictional organisations, enough to demonstrate a hit, a miss
+and the demo centres. Real organisations' data is not copied into the mock.
 
 ## UI
 
@@ -105,15 +118,18 @@ never be blocked by it. An organisation the register does not know is a miss
 | | phone | `Input` | ≤30 |
 | | operator code | `Input` | pattern `\d{8}` |
 | | submit | `AppButtonPrimary` | 400/409 problem text shown verbatim in a notification |
-| Questionnaire `/readiness` | notice | `AppAlert` | states that this is guidance only, that centre staff make the final decision, and that answers are not sent or stored |
+| Questionnaire `/readiness` | notice | `Alert` (antd) | states that this is guidance only, that centre staff make the final decision, and that answers are not sent or stored |
 | | questions | `AppCard` per category, `Radio.Group` (Yes / No) per question | questions from `/api/readiness-questions`, in `display_order` |
 | | check button | `AppButtonPrimary` | enabled once every question is answered; evaluates in the browser, makes no request |
-| | outcome | `AppResult` + list of advice | **Ready** — no concern raised; **Prepare first** — only `ADVISORY` concerns; **Not today** — at least one `BLOCKING` concern; the advice of every raised concern is listed |
+| | outcome | `Result` (antd) + list of advice | **Ready** — no concern raised; **Prepare first** — only `ADVISORY` concerns; **Not today** — at least one `BLOCKING` concern; the advice of every raised concern is listed |
 | | start over | `AppButtonSecondary` | clears the answers; leaving or reloading the page clears them too |
 
 A concern is raised when the answer equals the question's `concern_answer`.
 Answers live only in component state — never in `localStorage`,
-`sessionStorage`, the URL or a request.
+`sessionStorage`, the URL or a request. The outcome is computed by one pure
+function, `evaluateReadiness(questions, answers)` in
+`frontend/src/pages/readiness/evaluate.ts`, which the page calls and the
+business tests exercise directly.
 
 ## Business tests
 
@@ -130,6 +146,24 @@ Answers live only in component state — never in `localStorage`,
    Given three active questions with display orders 2, 1 and 3 and one retired
    question, when the questions are requested, then exactly the three active
    ones are returned, ordered 1, 2, 3.
+4. **A centre's region must be a known one.**
+   Given a request for a centre with region code `ATLANTIS`, when it is added,
+   then it is refused (400) with "unknown region code ATLANTIS".
+5. **An operator code is exactly eight digits.**
+   Given a request for a centre with operator code `1234567` (seven digits) or
+   `1234567A`, when it is added, then it is refused (400) with
+   "operatorRegistryCode must be exactly 8 digits".
+6. **The outcome follows the most serious concern raised.**
+   Given an `ADVISORY` and a `BLOCKING` question: when neither concern is
+   raised, then the outcome is *Ready* with no advice; when only the
+   `ADVISORY` concern is raised, then it is *Prepare first* with that
+   question's advice; when the `BLOCKING` concern is raised, with or without
+   the other, then it is *Not today* with the advice of every raised concern.
+
+Tests 1–5 are backend tests next to `AnimalBusinessRulesIT`. Test 6 tests
+`evaluateReadiness` directly with **Vitest**, added to the frontend as a dev
+dependency for this, since the template has no frontend test runner. It runs
+with `npx vitest run`, and CI's frontend job gains that step.
 
 The privacy constraint is verified by inspection rather than by a service
 test: the changelog has no table for answers, the API has no endpoint that
