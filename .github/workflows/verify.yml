@@ -58,7 +58,7 @@ jobs:
           if-no-files-found: ignore
 
   frontend:
-    name: frontend · tsc + vite build
+    name: frontend · tsc + vite build + vitest
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -83,6 +83,8 @@ jobs:
         run: npx tsc -b
       - name: vite build
         run: npx vite build
+      - name: vitest
+        run: npx vitest run
 
   changesets:
     name: db · changeset grammar

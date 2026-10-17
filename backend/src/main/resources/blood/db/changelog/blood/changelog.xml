@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The blood component changelog: donation centres and the readiness questionnaire.
+  Specification: docs/src/specifications/BLOOD.01-donation-readiness.md.
+
+  A released changeset is IMMUTABLE. Never edit one; append the next number.
+-->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+  <include file="blood/db/changelog/blood/blood-schema.sql"/>
+  <include file="blood/db/changelog/blood/01-region.sql"/>
+  <include file="blood/db/changelog/blood/02-donation-centre.sql"/>
+  <include file="blood/db/changelog/blood/03-readiness-question.sql"/>
+  <include file="blood/db/changelog/blood/90-demo-data.sql"/>
+
+</databaseChangeLog>

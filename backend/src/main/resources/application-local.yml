@@ -7,3 +7,7 @@ auth:
 animals:
   owner-registry:
     mock-server: true      # this app serves /mock-registry itself — works offline
+
+blood:
+  operator-registry:
+    mock-server: true      # the imitated business register, /mock-registry/companies
