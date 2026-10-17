@@ -50,3 +50,11 @@ animals:
     url: http://localhost:18440/mock-registry
     # The built-in imitated registry; enabled only in the local profile.
     mock-server: false
+
+blood:
+  operator-registry:
+    # http (default) — plain HTTPS+JSON against `url`; xroad — forge-xroad transport.
+    mode: http
+    url: http://localhost:18440/mock-registry
+    # The built-in imitated business register; enabled only in the local profile.
+    mock-server: false
